@@ -2,12 +2,11 @@
 
 #include "statisticswizard.h"
 
-QString emailRegExp = QStringLiteral(".+@.+");
 size_t ROW_COUNT = 8;
 size_t COLUMN_COUNT = 5;
 int buNeYa = 2;
 
-int genderId, ageId, intentId;
+int genderId = -1, ageId = -1, intentId = -1;
 
 int findIndex(std::vector<int> genderVector, std::vector<int> ageVector)
 {
@@ -111,6 +110,7 @@ StatisticsWizard::StatisticsWizard(QWidget *parent) : QWizard(parent)
 {
 	setPage(Page_Age, new AgePage);
 	setPage(Page_Intent, new IntentOfComingPage);
+//	setPage(Page_Conclusion, new ConclusionPage);
 
 //	setPixmap(QWizard::WatermarkPixmap, QPixmap(":/images/watermark.png"));
 	setStartId(Page_Age);
@@ -121,19 +121,27 @@ StatisticsWizard::StatisticsWizard(QWidget *parent) : QWizard(parent)
 	setButtonText(QWizard::CancelButton, "İptal");
 #ifndef Q_OS_MAC
 	setWizardStyle(ModernStyle);
+//	setWizardStyle(ClassicStyle);
+//	setWizardStyle(MacStyle);
 #endif
 //    setOption(HaveHelpButton, true);	// help butonunu aktifleştirmek için. (false demek daha iyi olabilir)
 	setPixmap(QWizard::LogoPixmap, QPixmap(":/images/logo.png"));
 
-	connect(this, &QWizard::finished, this, &StatisticsWizard::saveChoices);
+	connect(this, SIGNAL(finished(int)), this, SLOT(saveChoices(int)));
+//	connect(this, &QWizard::customButtonClicked, this, &StatisticsWizard::close);
+	setWindowTitle("Okuyucu İstatistik Programı");
 }
 
-void StatisticsWizard::saveChoices()
+void StatisticsWizard::saveChoices(int resultCode)
 {
 //	QWizardPage* agePage = page(Page_Age);
 //	agePage->
-	SaveEvent saveEvent(ageId, genderId, intentId);
-	saveEvent.saveNow();
+//	qDebug() << result();
+	if(resultCode == 1)	// finish'e basilinca 1 oluyor sanırım. daha fazla test ve/veya doc'a bakmam lazım
+	{
+		SaveEvent saveEvent(ageId, genderId, intentId);
+		saveEvent.saveNow();
+	}
 }
 
 AgePage::AgePage(QWidget *parent) : QWizardPage(parent)
@@ -159,15 +167,15 @@ AgePage::AgePage(QWidget *parent) : QWizardPage(parent)
 	gridLayoutGender->addWidget(radioButtonsGender[0], 0, 0);
 	gridLayoutGender->addWidget(radioButtonsGender[1], 0, 1);
 
-	radioButtons[0] = new QRadioButton("0-6");
-	radioButtons[1] = new QRadioButton("7-14");
-	radioButtons[2] = new QRadioButton("15-64");
-	radioButtons[3] = new QRadioButton("65 ve üstü");
+	radioButtonsAge[0] = new QRadioButton("0-6");
+	radioButtonsAge[1] = new QRadioButton("7-14");
+	radioButtonsAge[2] = new QRadioButton("15-64");
+	radioButtonsAge[3] = new QRadioButton("65 ve üstü");
 
-	gridLayout->addWidget(radioButtons[0], 0, 0);
-	gridLayout->addWidget(radioButtons[1], 0, 1);
-	gridLayout->addWidget(radioButtons[2], 1, 0);
-	gridLayout->addWidget(radioButtons[3], 1, 1);
+	gridLayout->addWidget(radioButtonsAge[0], 0, 0);
+	gridLayout->addWidget(radioButtonsAge[1], 0, 1);
+	gridLayout->addWidget(radioButtonsAge[2], 1, 0);
+	gridLayout->addWidget(radioButtonsAge[3], 1, 1);
 
 	ageButtonGroup = new QButtonGroup;
 	genderButtonGroup = new QButtonGroup;
@@ -178,7 +186,7 @@ AgePage::AgePage(QWidget *parent) : QWizardPage(parent)
 		connect(radioButton, &QAbstractButton::clicked, this, &AgePage::whichButtonHasCheckedGender);
 	}
 
-	foreach (auto radioButton, radioButtons)
+	foreach (auto radioButton, radioButtonsAge)
 	{
 		ageButtonGroup->addButton(radioButton);
 		connect(radioButton, &QAbstractButton::clicked, this, &AgePage::whichButtonHasCheckedAge);
@@ -205,6 +213,10 @@ void AgePage::whichButtonHasCheckedGender()
 {
 	genderId = genderButtonGroup->id(genderButtonGroup->checkedButton()) * (-1) - buNeYa;
 }
+//bool AgePage::isComplete() const
+//{
+
+//}
 
 
 IntentOfComingPage::IntentOfComingPage(QWidget *parent) : QWizardPage(parent)
@@ -219,11 +231,11 @@ IntentOfComingPage::IntentOfComingPage(QWidget *parent) : QWizardPage(parent)
 //	gridLayout->setHorizontalSpacing(4);
 //	gridLayout->setVerticalSpacing(3);
 
-	radioButtons[0] = new QRadioButton("Kitap/Dergi/Gazete Okumak");
-	radioButtons[1] = new QRadioButton("Kitap Ödünç Almak");
-	radioButtons[2] = new QRadioButton("Ders Çalışmak");
-	radioButtons[3] = new QRadioButton("İnternet kullanmak");
-	radioButtons[4] = new QRadioButton("Etkinliklere katılmak");
+	radioButtonsIntent[0] = new QRadioButton("Kitap/Dergi/Gazete Okumak");
+	radioButtonsIntent[1] = new QRadioButton("Kitap Ödünç Almak");
+	radioButtonsIntent[2] = new QRadioButton("Ders Çalışmak");
+	radioButtonsIntent[3] = new QRadioButton("İnternet kullanmak");
+	radioButtonsIntent[4] = new QRadioButton("Atölye/Etkinliklere katılmak");
 
 //    radioButton->setChecked(true);
 
@@ -232,18 +244,28 @@ IntentOfComingPage::IntentOfComingPage(QWidget *parent) : QWizardPage(parent)
 //    layout->addWidget(registerRadioButton);
 //    layout->addWidget(evaluateRadioButton);
 
-	gridLayout->addWidget(radioButtons[0]);//, 0, 0);
-	gridLayout->addWidget(radioButtons[1]);//, 0, 1);
-	gridLayout->addWidget(radioButtons[2]);//, 1, 0);
-	gridLayout->addWidget(radioButtons[3]);//, 1, 1);
-	gridLayout->addWidget(radioButtons[4]);//, 1, 1);
+	gridLayout->addWidget(radioButtonsIntent[0]);//, 0, 0);
+	gridLayout->addWidget(radioButtonsIntent[1]);//, 0, 1);
+	gridLayout->addWidget(radioButtonsIntent[2]);//, 1, 0);
+	gridLayout->addWidget(radioButtonsIntent[3]);//, 1, 1);
+	gridLayout->addWidget(radioButtonsIntent[4]);//, 1, 1);
 
 	intentButtonGroup = new QButtonGroup;
-	foreach (auto radioButton, radioButtons)
+	foreach (auto radioButton, radioButtonsIntent)
 	{
 		intentButtonGroup->addButton(radioButton);
-		connect(radioButton, &QAbstractButton::clicked, this, &IntentOfComingPage::whichButtonHasChecked);
+//		connect(radioButton, &QAbstractButton::clicked, this, &IntentOfComingPage::isComplete);
+		connect(radioButton, &QAbstractButton::clicked, this, &IntentOfComingPage::completeChanged);
 	}
+
+//	connect(this, SIGNAL(isComplete), this, SIGNAL(completeChanged));
+//	connect(this, SIGNAL(selectionChanged()), this, SIGNAL(completeChanged));
+
+//	foreach (auto radioButton, radioButtonsIntent)
+//	{
+//		intentButtonGroup->addButton(radioButton);
+//		connect(radioButton, &QAbstractButton::clicked, this, &IntentOfComingPage::isComplete);
+//	}
 
 	layout->addLayout(gridLayout);
 	setLayout(layout);
@@ -251,9 +273,65 @@ IntentOfComingPage::IntentOfComingPage(QWidget *parent) : QWizardPage(parent)
 
 int IntentOfComingPage::nextId() const
 {
+//	return StatisticsWizard::Page_Conclusion;
 	return -1;
 }
-void IntentOfComingPage::whichButtonHasChecked()
+bool IntentOfComingPage::isComplete() const
 {
+//	intentButtonGroup->
 	intentId = intentButtonGroup->id(intentButtonGroup->checkedButton()) * (-1) - buNeYa;
+	qDebug() << intentId;
+	return ((intentId != -1) & (ageId != -1) & (genderId != -1)) ? true : false;
 }
+
+ConclusionPage::ConclusionPage(QWidget *parent) : QWizardPage(parent)
+{
+	setTitle(tr("Complete Your Registration"));
+	setPixmap(QWizard::WatermarkPixmap, QPixmap(":/images/watermark.png"));
+
+	bottomLabel = new QLabel;
+	bottomLabel->setWordWrap(true);
+
+	agreeCheckBox = new QCheckBox(tr("I agree to the terms of the license"));
+
+	registerField("conclusion.agree*", agreeCheckBox);
+
+	QVBoxLayout *layout = new QVBoxLayout;
+	layout->addWidget(bottomLabel);
+	layout->addWidget(agreeCheckBox);
+	setLayout(layout);
+}
+
+int ConclusionPage::nextId() const
+{
+	return -1;
+}
+
+void ConclusionPage::initializePage()
+{
+	QString licenseText;
+
+	licenseText = tr("<u>Upgrade License Agreement:</u> This software is licensed under the terms of your current license.");
+	bottomLabel->setText(licenseText);
+}
+
+//void ConclusionPage::setVisible(bool visible)
+//{
+//	QWizardPage::setVisible(visible);
+
+//	if (visible) {
+
+//		wizard()->setButtonText(QWizard::CustomButton1, tr("&Print"));
+//		wizard()->setOption(QWizard::HaveCustomButton1, true);
+//		connect(wizard(), &QWizard::customButtonClicked, this, &ConclusionPage::printButtonClicked);
+
+//	} else {
+//		wizard()->setOption(QWizard::HaveCustomButton1, false);
+//		disconnect(wizard(), &QWizard::customButtonClicked, this, &ConclusionPage::printButtonClicked);
+//	}
+//}
+
+//void ConclusionPage::printButtonClicked()
+//{
+
+//}

@@ -13,13 +13,15 @@ QT_END_NAMESPACE
 class SaveEvent
 {
 public:
-	SaveEvent(int ageChoice, int genderChoice, int intentChoice);
+//    friend std::vector<std::vector<int>> operator+(const std::vector<std::vector<int>>& onceki, const std::vector<std::vector<int>>& sonraki);
+    SaveEvent(int ageChoice, int genderChoice, int intentChoice);
 	void saveNow();
 private:
 	QString openFile();
+    void initializeFile();
 	int age, gender, intent = 0;
-	std::vector<std::vector<int>> parseFile();
-	std::vector<std::vector<int>> buildStatistics();
+    std::vector<std::vector<int>> filedStatistics();
+    std::vector<std::vector<int>> newStatistics();
 };
 
 class StatisticsWizard : public QWizard
@@ -59,7 +61,7 @@ private:
 	QLabel *topLabel;
 	std::array<QRadioButton*, 5> radioButtonsIntent;
 	QButtonGroup* intentButtonGroup;
-private slots:
+//private slots:
 	bool isComplete() const override;
 };
 
@@ -71,11 +73,6 @@ public:
 
 	void initializePage() override;
 	int nextId() const override;
-//	void setVisible(bool visible) override;
-
-//private slots:
-//	void printButtonClicked();
-
 private:
 	QLabel *bottomLabel;
 	QCheckBox *agreeCheckBox;

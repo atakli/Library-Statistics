@@ -1,6 +1,7 @@
-QT += widgets printsupport
+QT += widgets
 
-QMAKE_CXXFLAGS_RELEASE += -std=c++17
+CONFIG += c++17 console
+#QMAKE_CXXFLAGS_RELEASE += -std=c++17
 
 HEADERS       = \
     statisticswizard.h

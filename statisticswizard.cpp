@@ -1,4 +1,5 @@
 #include <QtWidgets>
+#include <QDir>
 
 #include "statisticswizard.h"
 
@@ -7,6 +8,28 @@ size_t COLUMN_COUNT = 5;
 int buNeYa = 2;
 
 int genderId = -1, ageId = -1, intentId = -1;
+enum {NumCountLabelsRows = 5, NumCountLabelsCols = 8};
+
+const QString statisticsFile = QDir::homePath() + QDir::separator() + "statistics.csv";
+
+void SaveEvent::initializeFile()
+{
+    QFile file(statisticsFile);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";
+        return;							// TODO: buraya girerse ne olcak?
+    }
+
+    QTextStream out(&file);
+    for (int i = 0; i < NumCountLabelsCols; ++i)
+    {
+        for (int j = 0; j < NumCountLabelsRows; ++j)
+            out << "0" << ",";
+        out << 0 << '\n';
+    }
+    file.close();
+}
 
 int findIndex(std::vector<int> genderVector, std::vector<int> ageVector)
 {
@@ -27,25 +50,34 @@ int findIndex(int indexGender, int indexAge)
 
 SaveEvent::SaveEvent(int ageChoice, int genderChoice, int intentChoice) : age(ageChoice), gender(genderChoice), intent(intentChoice) {}
 
-std::vector<std::vector<int>> topla(std::vector<std::vector<int>>& onceki, std::vector<std::vector<int>>& sonraki)
+std::vector<std::vector<int>> operator+(const std::vector<std::vector<int>>& onceki, const std::vector<std::vector<int>>& sonraki)
 {
-	std::vector<std::vector<int> > sonuc( ROW_COUNT, std::vector<int>(COLUMN_COUNT));
+    std::vector<std::vector<int> > sonuc( ROW_COUNT, std::vector<int>(COLUMN_COUNT));
 	for(size_t i = 0; i < ROW_COUNT; ++i)
 		for(size_t j = 0; j < COLUMN_COUNT; ++j)
-			sonuc[i][j] = onceki[i][j] + sonraki[i][j];
+            sonuc[i][j] = onceki[i][j] + sonraki[i][j];
 	return sonuc;
 }
 
 QString SaveEvent::openFile()
 {
-	QFile file("istatistikler.csv");
+    if(!QFile::exists(statisticsFile))
+    {
+        initializeFile();
+        qDebug() << "girdi";
+    }
+
+    QFile file(statisticsFile);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";
 		return "";							// TODO: buraya girerse ne olcak?
+    }
 	QString text = file.readAll();
 	file.close();
 	return text;
 }
-std::vector<std::vector<int>> SaveEvent::buildStatistics()
+std::vector<std::vector<int>> SaveEvent::newStatistics()
 {
 	std::vector<std::vector<int>> statistics(ROW_COUNT, std::vector<int>(COLUMN_COUNT));
 	int index = findIndex(gender, age);
@@ -57,17 +89,17 @@ std::vector<std::vector<int>> SaveEvent::buildStatistics()
 }
 void SaveEvent::saveNow()
 {
-	std::vector<std::vector<int>> newStatistics = buildStatistics();
-	std::vector<std::vector<int>> savedStatistics = parseFile();
+    auto statisticstoBeSaved = filedStatistics() + newStatistics();
 
-	std::vector<std::vector<int>> statisticstoBeSaved = topla(savedStatistics, newStatistics);
-
-	QFile file("istatistikler.csv");
+    QFile file(statisticsFile);
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";
 		return;							// TODO: buraya girerse ne olcak?
+    }
 
 	QTextStream out(&file);
-	foreach(std::vector<int> numbers, statisticstoBeSaved)
+    foreach(const std::vector<int>& numbers, statisticstoBeSaved)
 	{
 		auto it = numbers.begin();
 		for(; it != numbers.end() - 1; ++it)
@@ -78,7 +110,7 @@ void SaveEvent::saveNow()
 	}
 	file.close();
 }
-std::vector<std::vector<int>> SaveEvent::parseFile()
+std::vector<std::vector<int>> SaveEvent::filedStatistics()
 {
 	QStringList lines = openFile().split('\n');
 
@@ -127,7 +159,7 @@ StatisticsWizard::StatisticsWizard(QWidget *parent) : QWizard(parent)
 //    setOption(HaveHelpButton, true);	// help butonunu aktifleştirmek için. (false demek daha iyi olabilir)
 	setPixmap(QWizard::LogoPixmap, QPixmap(":/images/logo.png"));
 
-	connect(this, SIGNAL(finished(int)), this, SLOT(saveChoices(int)));
+    connect(this, SIGNAL(finished(int)), this, SLOT(saveChoices(int)));
 //	connect(this, &QWizard::customButtonClicked, this, &StatisticsWizard::close);
 	setWindowTitle("Okuyucu İstatistik Programı");
 }
@@ -137,10 +169,10 @@ void StatisticsWizard::saveChoices(int resultCode)
 //	QWizardPage* agePage = page(Page_Age);
 //	agePage->
 //	qDebug() << result();
-	if(resultCode == 1)	// finish'e basilinca 1 oluyor sanırım. daha fazla test ve/veya doc'a bakmam lazım
+    if(resultCode == QDialog::Accepted)	// finish'e basilinca 1 oluyor sanırım. daha fazla test ve/veya doc'a bakmam lazım
 	{
-		SaveEvent saveEvent(ageId, genderId, intentId);
-		saveEvent.saveNow();
+        SaveEvent saveEvent(ageId, genderId, intentId);
+        saveEvent.saveNow();
 	}
 }
 
@@ -278,9 +310,7 @@ int IntentOfComingPage::nextId() const
 }
 bool IntentOfComingPage::isComplete() const
 {
-//	intentButtonGroup->
 	intentId = intentButtonGroup->id(intentButtonGroup->checkedButton()) * (-1) - buNeYa;
-	qDebug() << intentId;
 	return ((intentId != -1) & (ageId != -1) & (genderId != -1)) ? true : false;
 }
 
@@ -314,24 +344,3 @@ void ConclusionPage::initializePage()
 	licenseText = tr("<u>Upgrade License Agreement:</u> This software is licensed under the terms of your current license.");
 	bottomLabel->setText(licenseText);
 }
-
-//void ConclusionPage::setVisible(bool visible)
-//{
-//	QWizardPage::setVisible(visible);
-
-//	if (visible) {
-
-//		wizard()->setButtonText(QWizard::CustomButton1, tr("&Print"));
-//		wizard()->setOption(QWizard::HaveCustomButton1, true);
-//		connect(wizard(), &QWizard::customButtonClicked, this, &ConclusionPage::printButtonClicked);
-
-//	} else {
-//		wizard()->setOption(QWizard::HaveCustomButton1, false);
-//		disconnect(wizard(), &QWizard::customButtonClicked, this, &ConclusionPage::printButtonClicked);
-//	}
-//}
-
-//void ConclusionPage::printButtonClicked()
-//{
-
-//}

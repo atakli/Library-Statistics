@@ -17,8 +17,9 @@ public:
     SaveEvent(int ageChoice, int genderChoice, int intentChoice);
 	void saveNow();
 private:
-	QString openFile();
-    void initializeFile();
+	static QString openFile();
+	static void initializeFile();
+	static const QString statisticsFilePath;
 	int age, gender, intent = 0;
     std::vector<std::vector<int>> filedStatistics();
     std::vector<std::vector<int>> newStatistics();

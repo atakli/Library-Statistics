@@ -10,11 +10,11 @@ int buNeYa = 2;
 int genderId = -1, ageId = -1, intentId = -1;
 enum {NumCountLabelsRows = 5, NumCountLabelsCols = 8};
 
-const QString statisticsFile = QDir::homePath() + QDir::separator() + "statistics.csv";
+const QString SaveEvent::statisticsFilePath = QDir::homePath() + QDir::separator() + ".statistics.csv";
 
 void SaveEvent::initializeFile()
 {
-    QFile file(statisticsFile);
+	QFile file(statisticsFilePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
         qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";
@@ -61,13 +61,13 @@ std::vector<std::vector<int>> operator+(const std::vector<std::vector<int>>& onc
 
 QString SaveEvent::openFile()
 {
-    if(!QFile::exists(statisticsFile))
+	if(!QFile::exists(statisticsFilePath))
     {
         initializeFile();
         qDebug() << "girdi";
     }
 
-    QFile file(statisticsFile);
+	QFile file(statisticsFilePath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";
@@ -91,7 +91,7 @@ void SaveEvent::saveNow()
 {
     auto statisticstoBeSaved = filedStatistics() + newStatistics();
 
-    QFile file(statisticsFile);
+	QFile file(statisticsFilePath);
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
         qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";

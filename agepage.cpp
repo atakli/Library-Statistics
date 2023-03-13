@@ -21,14 +21,15 @@ AgePage::AgePage(QWidget *parent) : QWizardPage(parent), ui(new Ui::AgePage)
     foreach (auto radioButton, ui->groupBox_2->findChildren<QRadioButton*>(Qt::FindDirectChildrenOnly))
     {
         ageButtonGroup->addButton(radioButton);
-//        connect(radioButton, &QAbstractButton::clicked, this, &AgePage::whichButtonHasCheckedAge);
-        connect(radioButton, &QAbstractButton::clicked, this, [this](){ageId = ageButtonGroup->id(ageButtonGroup->checkedButton()) * (-1) - buNeYa;});  // TODO: daha sade olursa kalsın yoksa lambda olmasın
+        connect(radioButton, &QAbstractButton::clicked, this, &AgePage::whichButtonHasCheckedAge);
+//        connect(radioButton, &QAbstractButton::clicked, this, [this](){ageId = ageButtonGroup->id(ageButtonGroup->checkedButton()) * (-1) - buNeYa;});  // TODO: daha sade olursa kalsın yoksa lambda olmasın
     }
 }
 
 void AgePage::whichButtonHasCheckedAge()
 {
     ageId = ageButtonGroup->id(ageButtonGroup->checkedButton()) * (-1) - buNeYa;
+//    qDebug() << "page age id:" << ageId;
 }
 void AgePage::whichButtonHasCheckedGender()
 {

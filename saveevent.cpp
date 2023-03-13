@@ -1,38 +1,53 @@
 #include "saveevent.h"
 
+#include <QMessageBox>
 #include <QDir>
 
-size_t ROW_COUNT = 8;
-size_t COLUMN_COUNT = 5;
+#include <ranges>
+
+const size_t ROW_COUNT = 8;
+const size_t COLUMN_COUNT = 5;
 enum {NumCountLabelsRows = 5, NumCountLabelsCols = 8};
 
-const QString SaveEvent::statisticsFilePath = QDir::homePath() + QDir::separator() + "kutuphaneIstatistikleri.csv";
+const QString statisticsFile = QDir::homePath() + QDir::separator() + ".kutuphaneIstatistikleri.csv";
+const QString appName = "Kütüphane İstatistik Programı";
+
+std::unique_ptr<QFile> SaveEvent::openFile(QIODevice::OpenMode mode, const char* func_name) // ??? pointer'la yapmayinca neden copy ctor deleted hatasi verdi ???
+{
+    auto file = std::make_unique<QFile>(statisticsFile);
+    if (!file->open(mode))
+    {
+        qDebug() << func_name << "fonksiyonundaki" << statisticsFile << "dosyasi acilamadi!";
+        QMessageBox msgBox(QMessageBox::Question, appName, statisticsFile + " dosyasi acilamadi!", QMessageBox::Ok);
+        msgBox.setButtonText(QMessageBox::Ok, "Tamam");
+        msgBox.exec();
+        exit(EXIT_FAILURE);
+    }
+    return file;
+}
 
 void SaveEvent::initializeFile()
 {
-    QFile file(statisticsFilePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";
-        return;							// TODO: buraya girerse ne olcak?
-    }
+    auto file = openFile(QIODevice::WriteOnly | QIODevice::Text, __func__);
 
-    QTextStream out(&file);
+    QTextStream out(file.get());
     for (int i = 0; i < NumCountLabelsCols; ++i)
     {
-        for (int j = 0; j < NumCountLabelsRows; ++j)
-            out << "0" << ",";
+        for (int j = 0; j < NumCountLabelsRows - 1; ++j)
+        {
+            out << 0 << ",";
+        }
         out << 0 << '\n';
     }
-    file.close();
+    file->close();
 }
 
 int SaveEvent::findIndex(std::vector<int> genderVector, std::vector<int> ageVector)
 {
-    auto itAge = std::find(ageVector.begin(), ageVector.end(), 1);
-    int indexAge = itAge - ageVector.begin();
-    auto itGender = std::find(genderVector.begin(), genderVector.end(), 1);
-    int indexGender = itGender - genderVector.begin();
+    const auto itAge = std::find(ageVector.begin(), ageVector.end(), 1);
+    const int indexAge = itAge - ageVector.begin();
+    const auto itGender = std::find(genderVector.begin(), genderVector.end(), 1);
+    const int indexGender = itGender - genderVector.begin();
     if(indexGender == 1)
         return (indexAge + 1) * 2 - 1;
     return (indexAge + 1) * 2 - 2;
@@ -55,28 +70,19 @@ std::vector<std::vector<int>> operator+(const std::vector<std::vector<int>>& onc
     return sonuc;
 }
 
-QString SaveEvent::openFile()
+QString SaveEvent::readFile()
 {
-    if(!QFile::exists(statisticsFilePath))
+    if(!QFile::exists(statisticsFile))
     {
         initializeFile();
-        qDebug() << "girdi";
+        qDebug() << statisticsFile << "yoktu olusturduk";
     }
-
-    QFile file(statisticsFilePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";
-        return "";							// TODO: buraya girerse ne olcak?
-    }
-    QString text = file.readAll();
-    file.close();
-    return text;
+    return openFile(QIODevice::ReadOnly | QIODevice::Text, __func__)->readAll();
 }
 std::vector<std::vector<int>> SaveEvent::newStatistics()
 {
     std::vector<std::vector<int>> statistics(ROW_COUNT, std::vector<int>(COLUMN_COUNT));
-    int index = findIndex(gender, age);
+    const int index = findIndex(gender, age);
     std::vector<int> intentVector(COLUMN_COUNT);
     intentVector[intent] = 1;
     statistics[index] = intentVector;
@@ -85,17 +91,12 @@ std::vector<std::vector<int>> SaveEvent::newStatistics()
 }
 void SaveEvent::saveNow()
 {
-    auto statisticstoBeSaved = filedStatistics() + newStatistics();
+    const auto statisticstoBeSaved = filedStatistics() + newStatistics();
 
-    QFile file(statisticsFilePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        qDebug() << __func__ << " fonksiyonundaki dosya acilamadi";
-        return;							// TODO: buraya girerse ne olcak?
-    }
+    auto file = openFile(QIODevice::WriteOnly | QIODevice::Text, __func__);
 
-    QTextStream out(&file);
-    foreach(const std::vector<int>& numbers, statisticstoBeSaved)
+    QTextStream out(file.get());
+    for (const std::vector<int>& numbers : statisticstoBeSaved)
     {
         auto it = numbers.begin();
         for(; it != numbers.end() - 1; ++it)
@@ -104,22 +105,22 @@ void SaveEvent::saveNow()
         }
         out << *it << '\n';
     }
-    file.close();
+    file->close();
 }
 std::vector<std::vector<int>> SaveEvent::filedStatistics()
 {
-    QStringList lines = openFile().split('\n');
+    const QStringList lines = readFile().split('\n');
 
     std::vector<std::vector<int>> statistics;
-    std::vector<int> sonuc;
 
-    foreach(QString line, lines)
+//    for (const QString& line : lines)
+    std::ranges::transform(lines, std::back_inserter(statistics), [](const QString& line)
     {
-        QStringList elemanlar = line.split(',');
-        foreach(auto eleman, elemanlar)
-            sonuc.emplace_back(eleman.toInt());
-        statistics.emplace_back(sonuc);
-        sonuc.clear();
-    }
+        std::vector<int> sonuc;
+        const QStringList elemanlar = line.split(',');
+        std::ranges::transform(elemanlar, std::back_inserter(sonuc), [](const auto& eleman){return eleman.toInt();});
+        return sonuc;
+//        statistics.emplace_back(sonuc);
+    });
     return statistics;
 }

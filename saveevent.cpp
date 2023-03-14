@@ -1,11 +1,12 @@
 #include "saveevent.h"
 
 #include <QMessageBox>
+#include <QDebug>
 #include <QDir>
 
 enum {NumCountLabelsRows = 5, NumCountLabelsCols = 8};
 
-const QString statisticsFile = QDir::homePath() + QDir::separator() + ".kutuphaneIstatistikleri.csv";
+const QString statisticsFile = QDir::homePath() + QDir::separator() + ".kutuphaneIstatistikleri";
 const QString appName = "Kütüphane İstatistik Programı";
 
 std::unique_ptr<QFile> SaveEvent::openFile(QIODevice::OpenMode mode, const char* func_name) // ??? pointer'la yapmayinca neden copy ctor deleted hatasi verdi ???
@@ -55,7 +56,7 @@ void SaveEvent::saveNow()
 
     const int new_number = [number_old]
     {
-        if (std::endian::native == std::endian::big)
+		if (std::endian::native == std::endian::big)
             return number_old.toInt() + 1;
         else
         {

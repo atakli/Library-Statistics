@@ -22,7 +22,7 @@ if (argc != 1 && argc != 2)
     {
         fprintf(stderr, "The given argument is wrong! Only the argument --enable-logging is accepted.\n");
         fflush(stderr);
-        return -1;
+        return -2;
     }
 #endif
     QApplication a(argc, argv);

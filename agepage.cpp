@@ -11,14 +11,22 @@ AgePage::AgePage(QWidget *parent) : QWizardPage(parent), ui(new Ui::AgePage)
     ui->setupUi(this);
 //    std::cout << "count: " << ui->horizontalLayout_4->count() << std::endl;
     genderButtonGroup = new QButtonGroup;
-    foreach (auto radioButton, ui->groupBox->findChildren<QRadioButton*>(Qt::FindDirectChildrenOnly))
+#if QT_VERSION < QT_VERSION_CHECK(5,15,3)
+	foreach (auto radioButton, ui->groupBox->findChildren<QRadioButton*>())
+#else
+	foreach (auto radioButton, ui->groupBox->findChildren<QRadioButton*>(Qt::FindDirectChildrenOnly))
+#endif
     {
         genderButtonGroup->addButton(radioButton);
         connect(radioButton, &QAbstractButton::clicked, this, &AgePage::whichButtonHasCheckedGender);
     }
 
     ageButtonGroup = new QButtonGroup;
-    foreach (auto radioButton, ui->groupBox_2->findChildren<QRadioButton*>(Qt::FindDirectChildrenOnly))
+#if QT_VERSION < QT_VERSION_CHECK(5,15,3)
+	foreach (auto radioButton, ui->groupBox_2->findChildren<QRadioButton*>())
+#else
+	foreach (auto radioButton, ui->groupBox_2->findChildren<QRadioButton*>(Qt::FindDirectChildrenOnly))
+#endif
     {
         ageButtonGroup->addButton(radioButton);
         connect(radioButton, &QAbstractButton::clicked, this, &AgePage::whichButtonHasCheckedAge);

@@ -5,6 +5,8 @@
 #include <QString>
 #include <QFile>
 
+#include <memory>
+
 class SaveEvent
 {
 public:

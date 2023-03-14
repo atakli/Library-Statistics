@@ -2,9 +2,14 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += console
-QMAKE_CXXFLAGS_WARN_ON += /std:c++latest
 
+win32 {
+    CONFIG += console
+    QMAKE_CXXFLAGS_WARN_ON += /std:c++latest
+}
+unix {
+    QMAKE_CXXFLAGS += -std=c++2a
+}
 SOURCES += \
     agepage.cpp \
 #    conclusionpage.cpp \
@@ -19,11 +24,6 @@ HEADERS += \
     intentofcomingpage.h \
     saveevent.h \
     statisticswizard.h
-
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
 
 FORMS += \
     agepage.ui \

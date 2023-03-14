@@ -3,10 +3,13 @@
 #include <QApplication>
 #include <iostream>
 
+#ifdef _WIN32
 #include "windows.h"
-
+#else
+#endif
 int main(int argc, char *argv[])
 {
+#ifdef _WIN32
 #ifndef _DEBUG  // COK HOS
 if (argc != 1 && argc != 2)
     {
@@ -24,6 +27,7 @@ if (argc != 1 && argc != 2)
         fflush(stderr);
         return -2;
     }
+#endif
 #endif
     QApplication a(argc, argv);
     StatisticsWizard w;

@@ -24,17 +24,12 @@ std::unique_ptr<QFile> SaveEvent::openFile(QIODevice::OpenMode mode, const char*
 
 void SaveEvent::initializeFile()
 {
-    auto file = openFile(QIODevice::WriteOnly | QIODevice::Text, __func__);
+    auto file = openFile(QIODevice::WriteOnly, __func__);
 
-    QTextStream out(file.get());
-    for (int i = 0; i < NumCountLabelsRows; ++i)
-    {
-        for (int j = 0; j < NumCountLabelsCols - 1; ++j)
-        {
-            out << "0,";
-        }
-        out << "0\n";
-    }
+    const int number_of_bytes = NumCountLabelsRows * NumCountLabelsCols * sizeof(int);
+    const QByteArray zeros{number_of_bytes, '\0'}; // 0 de ayni hesap. ama '0' farkli. // dongu ile yazmak daha performant diye dusunuyorum ama boyle daha okunakli sanki
+    if (file->write(zeros) != number_of_bytes)
+        qDebug() << "Failed to write zeros to file";
     file->close();
 }
 
@@ -49,10 +44,30 @@ SaveEvent::SaveEvent(int ageChoice, int genderChoice, int intentChoice) : age(ag
 
 void SaveEvent::saveNow()
 {
-    std::unique_ptr<QFile> statistics = openFile(QIODevice::ReadWrite | QIODevice::Text, __func__); // ah be. replace yapiyodum ama yaptigim noktadan sonrasi yok oluyordu. meger writeonly mode'da acmisim. cok tehlikeli!
-    if (!statistics->seek(4 * age + 2 * gender + (NumCountLabelsCols + 7) * intent))   // degistirilecek yere geliyorum
-        qDebug() << "error in seek";
-    if (statistics->write("1", 1) != 1)
+    std::unique_ptr<QFile> statistics = openFile(QIODevice::ReadWrite, __func__); // ah be. replace yapiyodum ama yaptigim noktadan sonrasi yok oluyordu. meger writeonly mode'da acmisim. cok tehlikeli!
+    const qint64 pos = 2 * age + 1 * gender + (NumCountLabelsCols) * intent;
+    if (!statistics->seek(pos * sizeof(int)))   // degistirilecek yere geliyorum
+        qDebug() << "error in seek to read";
+
+    const QByteArray number_old = statistics->read(1 * sizeof(int));
+    if (!statistics->seek(pos * sizeof(int)))   // degistirilecek yere tekrar geliyorum
+        qDebug() << "error in seek to write";
+
+    const int new_number = [number_old]
+    {
+        if (std::endian::native == std::endian::big)
+            return number_old.toInt() + 1;
+        else
+        {
+            QDataStream stream(number_old);
+            stream.setByteOrder(QDataStream::LittleEndian);
+            int num;
+            stream >> num; // read the integer from the data stream
+            return num + 1;
+        }
+    }();
+    const qint64 size = statistics->write((const char*)&new_number, 1 * sizeof(int));
+    if (size != sizeof(int))
         qDebug() << "error in write";
     statistics->close();
 }
